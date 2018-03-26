@@ -15,3 +15,4 @@ require __DIR__.'/routes.php';
 $resp = \PHPStack\Framework\Router::dispatch($_SERVER['REQUEST_URI']);
 
 echo $resp;
+
