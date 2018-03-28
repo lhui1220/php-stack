@@ -17,7 +17,7 @@ class RabbitMQTest extends TestCase
 
     public function testBasicPublish()
     {
-        $connection = new AMQPStreamConnection($GLOBALS['HOST_GEEKIO'], 5672, 'guest', 'guest');
+        $connection = new AMQPStreamConnection($GLOBALS['HOST_GEEKIO'], 5672, 'rabbit', 'rabbit');
         $channel = $connection->channel();
         $channel->queue_declare('hello', false, false, false, false);
         $msg = new AMQPMessage('Hello World!');
@@ -29,12 +29,14 @@ class RabbitMQTest extends TestCase
 
     public function testBasicConsume()
     {
-        $connection = new AMQPStreamConnection($GLOBALS['HOST_GEEKIO'], 5672, 'guest', 'guest');
+        $connection = new AMQPStreamConnection($GLOBALS['HOST_GEEKIO'], 5672, 'rabbit', 'rabbit');
         $channel = $connection->channel();
         $channel->queue_declare('hello', false, false, false, false);
         echo ' [*] Waiting for messages. To exit press CTRL+C', "\n";
+        ob_flush();
         $callback = function($msg) {
             echo " [x] Received ", $msg->body, "\n";
+            ob_flush();
         };
         $channel->basic_consume('hello', '', false, true, false, false, $callback);
         while(count($channel->callbacks)) {
