@@ -29,4 +29,23 @@ class HashTest extends TestCase
         $this->assertEquals(3,$this->hashRing->get($key));
     }
 
+    public function testRedisSlot()
+    {
+        print_r($this->crc16("foo")."\n");
+//        $this->assertEquals(12182,$this->crc16("foo") % 16384);
+        $this->assertEquals(866,13558 % 16384);
+    }
+
+    function crc16($data)
+    {
+        $crc = 0xFFFF;
+        for ($i = 0; $i < strlen($data); $i++)
+        {
+            $x = (($crc >> 8) ^ ord($data[$i])) & 0xFF;
+            $x ^= $x >> 4;
+            $crc = (($crc << 8) ^ ($x << 12) ^ ($x << 5) ^ $x) & 0xFFFF;
+        }
+        return $crc;
+    }
+
 }

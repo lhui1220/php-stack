@@ -83,4 +83,20 @@ class RedisSkill
         return json_encode($data, JSON_UNESCAPED_UNICODE);
     }
 
+    public function testCluster()
+    {
+        $nodes = [
+            ['host' => '193.112.57.240', 'port' => 30001],
+            ['host' => '193.112.57.240', 'port' => 30002],
+            ['host' => '193.112.57.240', 'port' => 30003]
+        ];
+        $options = ['cluster'=>'redis','profile'=>'3.2'];
+
+        $cluster = new Client($nodes, $options);
+        $cluster->set('foo','bar');
+
+        echo $cluster->get('foo');
+
+    }
+
 }

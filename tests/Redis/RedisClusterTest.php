@@ -11,6 +11,7 @@ namespace PHPStack\Redis;
 use PHPStack\Common\StringUtils;
 use PHPUnit\Framework\TestCase;
 use Predis\Client;
+use Predis\Response\Status;
 
 class RedisClusterTest extends TestCase
 {
@@ -82,5 +83,22 @@ class RedisClusterTest extends TestCase
         $this->assertEquals('val',$slave2->get('key'));
 
         $master->flushdb();
+    }
+
+    public function testCluster()
+    {
+        $nodes = [
+            ['host' => '193.112.57.240', 'port' => 30001],
+            ['host' => '193.112.57.240', 'port' => 30002],
+            ['host' => '193.112.57.240', 'port' => 30003]
+        ];
+        $options = ['cluster'=>'redis','profile'=>'3.2'];
+
+        $cluster = new Client($nodes, $options);
+        $res = $cluster->set('foo','bar');
+
+        $this->assertEquals(Status::get('OK'),$res);
+        $this->assertEquals('bar',$cluster->get('foo'));
+
     }
 }

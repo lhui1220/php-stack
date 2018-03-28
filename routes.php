@@ -11,3 +11,5 @@ use PHPStack\Framework\Router;
 Router::register('/redis/setex','PHPStack\Redis\RedisSkill@saveTTLKey');
 
 Router::register('/redis/hop','PHPStack\Redis\RedisSkill@hop');
+
+Router::register('/redis/cluster','PHPStack\Redis\RedisSkill@testCluster');
