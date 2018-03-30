@@ -10,13 +10,14 @@ namespace PHPStack\MQ;
 
 use PhpAmqpLib\Connection\AMQPStreamConnection;
 use PhpAmqpLib\Message\AMQPMessage;
+use PhpAmqpLib\Wire\AMQPTable;
 use PHPStack\Common\StringUtils;
 use PHPUnit\Framework\TestCase;
 
 class RabbitMQTest extends TestCase
 {
     private static $DELAY_QUEUE = 'delay_queue';
-    private static $ORDER_QUEUE = 'delay_queue';
+    private static $ORDER_QUEUE = 'order_queue';
     private static $EX_ORDER = 'ex_order';
     private static $DELAY_ROUTING_KEY = 'timeout_order';
 
@@ -215,13 +216,21 @@ class RabbitMQTest extends TestCase
         $connection = new AMQPStreamConnection($GLOBALS['HOST_GEEKIO'], 5672, 'rabbit', 'rabbit');
         $channel = $connection->channel();
 
+        $args = new AMQPTable();
+        $args->set('x-dead-letter-exchange', self::$EX_ORDER);
+        $args->set('x-dead-letter-routing-key', self::$DELAY_ROUTING_KEY);
+        $channel->queue_declare(self::$DELAY_QUEUE, false,
+            true, //开启队列持久化
+            false, //true表示与消费者断连的时候删除队列
+            false,false,
+            $args);
+
         $msg = new AMQPMessage(StringUtils::randStr(mt_rand(3,30)),
             [
-                'delivery_mode' => AMQPMessage::DELIVERY_MODE_PERSISTENT, //开启消息持久化
+                //'delivery_mode' => AMQPMessage::DELIVERY_MODE_PERSISTENT, //开启消息持久化
                 'expiration' => '30000'
             ]
         );
-        $this->declareDelayQueue($channel);
         $channel->basic_publish($msg, '', self::$DELAY_QUEUE);
         echo " [x] Sent ". $msg->body ."\n";
         $channel->close();
@@ -256,19 +265,6 @@ class RabbitMQTest extends TestCase
         }
         $channel->close();
         $connection->close();
-    }
-
-    private function declareDelayQueue($channel)
-    {
-        $args = [
-            'x-dead-letter-exchange' => self::$EX_ORDER,
-            'x-dead-letter-routing-key' => self::$DELAY_ROUTING_KEY
-        ];
-        $channel->queue_declare(self::$DELAY_QUEUE, false,
-            true, //开启队列持久化
-            false, //true表示与消费者断连的时候删除队列
-            false,false,
-            $args);
     }
 
 }
