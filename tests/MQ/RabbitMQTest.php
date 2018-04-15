@@ -267,4 +267,39 @@ class RabbitMQTest extends TestCase
         $connection->close();
     }
 
+    /**
+     * @group  ack
+     */
+    public function testPublisherConfirm()
+    {
+        $connection = new AMQPStreamConnection($GLOBALS['HOST_GEEKIO'], 5672, 'rabbit', 'rabbit');
+        $channel = $connection->channel();
+        $msg_count = 10;
+        $ack_count = 0;
+        $channel->set_ack_handler(function (AMQPMessage $message) use(&$ack_count) {
+            echo "[*] Ack msg:" . $message->body . PHP_EOL;
+            $ack_count++;
+        });
+        $channel->set_nack_handler(function (AMQPMessage $message) {
+            echo "[*] NAck msg:" . $message->body . PHP_EOL;
+        });
+        $channel->confirm_select();
+        $routing_key = 'publisher_confirm';
+        $channel->queue_declare($routing_key, false, false, false, false);
+
+        $i = 1;
+        while ($i <= $msg_count) {
+            $msg = new AMQPMessage("Hello " . $i++);
+            $channel->basic_publish($msg, '', $routing_key);
+        }
+        echo " [x] Sent all messages\n";
+        $channel->wait_for_pending_acks();
+
+        //驗證所有消息都發送成功
+        $this->assertEquals($msg_count, $ack_count);
+
+        $channel->close();
+        $connection->close();
+    }
+
 }
