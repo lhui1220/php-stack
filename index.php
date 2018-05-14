@@ -12,6 +12,8 @@ require __DIR__.'/vendor/autoload.php';
 
 require __DIR__.'/routes.php';
 
+define('ROOT_PATH', dirname(__FILE__).'/');
+
 $resp = \PHPStack\Framework\Router::dispatch($_SERVER['REQUEST_URI']);
 
 echo $resp;

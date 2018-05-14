@@ -51,12 +51,16 @@ class RabbitMQTest extends TestCase
     public function testBasicConsume()
     {
 
+        define('AMQP_DEBUG',true);
+        define('AMQP_DEBUG_OUTPUT',fopen('debug.log','a'));
+
         $connection = new AMQPStreamConnection($GLOBALS['HOST_GEEKIO'], 5672, 'rabbit', 'rabbit');
         $channel = $connection->channel();
         $channel->queue_declare('hello', false, false, false, false);
         echo ' [*] Waiting for messages. To exit press CTRL+C', "\n";
         $callback = function($msg) {
-            echo " [x] Received ", $msg->body, "\n";
+            $content = " [x] Received ". $msg->body. "\n";
+            echo $content;
         };
         $channel->basic_consume('hello', '', false, true, false, false, $callback);
         while(count($channel->callbacks)) {
@@ -189,7 +193,7 @@ class RabbitMQTest extends TestCase
     {
         $connection = new AMQPStreamConnection($GLOBALS['HOST_GEEKIO'], 5672, 'rabbit', 'rabbit');
         $channel = $connection->channel();
-        $channel->exchange_declare('user_posts','direct');
+        $channel->exchange_declare('user_posts','direct',false,true);
         $result = $channel->queue_declare('', false, false, false, false);
         $queue = $result[0];
         //模拟订阅关注用户的帖子
@@ -219,6 +223,7 @@ class RabbitMQTest extends TestCase
         $args = new AMQPTable();
         $args->set('x-dead-letter-exchange', self::$EX_ORDER);
         $args->set('x-dead-letter-routing-key', self::$DELAY_ROUTING_KEY);
+        $args->set('x-message-ttl', 15000);
         $channel->queue_declare(self::$DELAY_QUEUE, false,
             true, //开启队列持久化
             false, //true表示与消费者断连的时候删除队列
@@ -227,12 +232,12 @@ class RabbitMQTest extends TestCase
 
         $msg = new AMQPMessage(StringUtils::randStr(mt_rand(3,30)),
             [
-                //'delivery_mode' => AMQPMessage::DELIVERY_MODE_PERSISTENT, //开启消息持久化
-                'expiration' => '30000'
+                'delivery_mode' => AMQPMessage::DELIVERY_MODE_PERSISTENT, //开启消息持久化
+//                'expiration' => '30000'
             ]
         );
         $channel->basic_publish($msg, '', self::$DELAY_QUEUE);
-        echo " [x] Sent ". $msg->body ."\n";
+        echo " [x] Sent ". $msg->body ." at " .date('Y-m-d H:i:s'). "\n";
         $channel->close();
         $connection->close();
     }
@@ -245,13 +250,12 @@ class RabbitMQTest extends TestCase
         $connection = new AMQPStreamConnection($GLOBALS['HOST_GEEKIO'], 5672, 'rabbit', 'rabbit');
         $channel = $connection->channel();
         $channel->exchange_declare(self::$EX_ORDER,'direct');
-        $channel->queue_declare(self::$ORDER_QUEUE);
+        $channel->queue_declare(self::$ORDER_QUEUE, false, true);
         $channel->queue_bind(self::$ORDER_QUEUE, self::$EX_ORDER, self::$DELAY_ROUTING_KEY);
         echo ' [*] Waiting for messages. To exit press CTRL+C', "\n";
         $callback = function($msg) {
-            echo " [x] Received ", $msg->body, "\n";
+            echo " [x] Received ", $msg->body, " at ".date('Y-m-d H:i:s')."\n";
             $msg->delivery_info['channel']->basic_ack($msg->delivery_info['delivery_tag']);
-            echo " [x] Ack ",$msg->body, "\n";
         };
         $channel->basic_qos(null,1,null);
         $channel->basic_consume(
@@ -260,11 +264,26 @@ class RabbitMQTest extends TestCase
             false,
             false, //响应ACK,防止消息丢失
             false, false, $callback);
+
         while(count($channel->callbacks)) {
             $channel->wait();
         }
         $channel->close();
         $connection->close();
+    }
+
+    public function testCatchException()
+    {
+        try {
+            $this->throwEx();
+        } catch (\Exception $e) {
+            echo $e->getMessage() . PHP_EOL;
+        }
+    }
+
+    private function throwEx()
+    {
+        throw new \InvalidArgumentException("invalid arg");
     }
 
 }
