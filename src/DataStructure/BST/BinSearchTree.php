@@ -81,8 +81,26 @@ class BinSearchTree
             $node->rChild->parent = $node->parent;
         } else {
             //既有左子节点又有右子节点
+            $successor = $this->findSuccessor($node);
+            $this->swap($node, $successor);
+            $successor->parent->rChild = $successor->rChild;
 
         }
+    }
+
+    /**
+     * 交互两个节点的数据
+     *
+     * @param BinSearchNode $left
+     * @param BinSearchNode $right
+     * @author liuhui
+     * @date 2018-07-25
+     */
+    protected function swap($left, $right)
+    {
+        $tmp = $left->data;
+        $left->data = $right->data;
+        $right->data = $tmp;
     }
 
     /**

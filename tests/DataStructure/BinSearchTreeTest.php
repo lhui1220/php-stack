@@ -61,4 +61,22 @@ class BinSearchTreeTest extends TestCase
         $this->assertEquals(true, $this->tree->isEmpty());
     }
 
+
+    public function testDeleteHasLRChildNode()
+    {
+        $this->tree->deleteNode(['id' => 3]);
+        $result = $this->tree->inOrderWithIterate();
+        $this->assertEquals([1, 2, 4, 5, 6, 7, 8], $result);
+
+        $node = $this->tree->searchNode(['id' => 3]);
+        $this->assertNull($node);
+
+        $successor = $this->tree->searchNode(['id' => 4]);
+
+        $this->assertEquals($successor->parent->key(), 6);
+        $this->assertEquals($successor->lChild->key(), 2);
+        $this->assertEquals($successor->rChild->key(), 5);
+
+    }
+
 }
